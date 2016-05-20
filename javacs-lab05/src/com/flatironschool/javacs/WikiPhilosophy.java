@@ -1,6 +1,7 @@
 package com.flatironschool.javacs;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,15 +56,29 @@ public class WikiPhilosophy {
     }
 
     private static String getFirstLink(Elements paragraphs) {
+    	// if empty, parentheses are closed
+		ArrayDeque<String> parentheses = new ArrayDeque<String>();
 		int i = 0;
 		while (i<paragraphs.size()) {
 			Element firstPara = paragraphs.get(i);
 			Iterable<Node> iter = new WikiNodeIterable(firstPara);
 			for (Node node: iter) {
+				if (node instanceof TextNode) {
+					System.out.println("TextNode");
+					for (char ch: ((TextNode)node).text().toCharArray()) {
+						if (ch == '(') {
+							System.out.println("(");
+							parentheses.push("(");
+						} else if (ch == ')') {
+							System.out.println(")");
+							parentheses.pop();
+						}
+					}
+				}
 				if (node instanceof Element) {
 					Elements links = ((Element)node).select("a[href]");
 					for (Element element: links) {
-						if (!italicized(element)) {
+						if (!italicized(element) && parentheses.isEmpty()) {
 							String href = element.attr("href");
 							// link is not external, but not to the same page
 							if (href.startsWith("/wiki")) {
