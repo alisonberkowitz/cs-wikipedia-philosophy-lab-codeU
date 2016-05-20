@@ -1,7 +1,6 @@
 package com.flatironschool.javacs;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,8 +44,8 @@ public class WikiPhilosophy {
     	Elements paragraphs = wf.fetchWikipedia(url);
 
 		String next = getFirstLink(paragraphs);
-		if (next == "https://en.wikipedia.org/wiki/Philosophy") {
-			//indicate success and exit ?
+		if (next.equals("https://en.wikipedia.org/wiki/Philosophy")) {
+			System.out.println("Philosophy Reached");
 		} else if (visited.contains(next)) {
 			String msg = "Link already visited";
 			throw new UnsupportedOperationException(msg);
@@ -56,30 +55,17 @@ public class WikiPhilosophy {
     }
 
     private static String getFirstLink(Elements paragraphs) {
-    	// if empty, parentheses are closed
-		ArrayDeque<String> parentheses = new ArrayDeque<String>();
 		int i = 0;
 		while (i<paragraphs.size()) {
 			Element firstPara = paragraphs.get(i);
 			Iterable<Node> iter = new WikiNodeIterable(firstPara);
 			for (Node node: iter) {
-				if (node instanceof TextNode) {
-					System.out.println("TextNode");
-					for (char ch: ((TextNode)node).text().toCharArray()) {
-						if (ch == '(') {
-							System.out.println("(");
-							parentheses.push("(");
-						} else if (ch == ')') {
-							System.out.println(")");
-							parentheses.pop();
-						}
-					}
-				}
 				if (node instanceof Element) {
 					Elements links = ((Element)node).select("a[href]");
 					for (Element element: links) {
-						if (!italicized(element) && parentheses.isEmpty()) {
+						if (!italicized(element) && !parenthesized((Element)node, element)) {
 							String href = element.attr("href");
+							// check for parentheses
 							// link is not external, but not to the same page
 							if (href.startsWith("/wiki")) {
 								String absHref = element.attr("abs:href");
@@ -105,5 +91,21 @@ public class WikiPhilosophy {
 			}
 		}
 		return italics;
+    }
+
+    // checks if link is parenthesized in element
+    private static boolean parenthesized(Element element, Element link) {
+    	// if 0, parentheses are closed
+		int parentheses = 0;
+		String text = element.text();
+		int linkIndex = text.indexOf(link.text());
+		for (int i=0; i<linkIndex; i++) {
+			if (text.charAt(i)=='(') {
+				parentheses++;
+			} else if (text.charAt(i)==')') {
+				parentheses--;
+			}
+		}
+		return parentheses > 0;
     }
 }
