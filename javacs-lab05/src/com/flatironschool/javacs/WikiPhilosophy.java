@@ -13,6 +13,7 @@ import org.jsoup.select.Elements;
 public class WikiPhilosophy {
 	
 	final static WikiFetcher wf = new WikiFetcher();
+	static List visited = new ArrayList<String>();
 	
 	/**
 	 * Tests a conjecture about Wikipedia and Philosophy.
@@ -28,24 +29,66 @@ public class WikiPhilosophy {
 	 * @throws IOException
 	 */
 	public static void main(String[] args) throws IOException {
-		
-        // some example code to get you started
 
 		String url = "https://en.wikipedia.org/wiki/Java_(programming_language)";
-		Elements paragraphs = wf.fetchWikipedia(url);
-
-		Element firstPara = paragraphs.get(0);
-		
-		Iterable<Node> iter = new WikiNodeIterable(firstPara);
-		for (Node node: iter) {
-			if (node instanceof TextNode) {
-				System.out.print(node);
-			}
-        }
+		followLink(url);
 
         // the following throws an exception so the test fails
         // until you update the code
-        String msg = "Complete this lab by adding your code and removing this statement.";
-        throw new UnsupportedOperationException(msg);
+        // String msg = "Complete this lab by adding your code and removing this statement.";
+        // throw new UnsupportedOperationException(msg);
 	}
+
+    private static void followLink(String url) throws IOException {
+    	visited.add(url);
+    	Elements paragraphs = wf.fetchWikipedia(url);
+
+		String next = getFirstLink(paragraphs);
+		if (next == "https://en.wikipedia.org/wiki/Philosophy") {
+			//indicate success and exit ?
+		} else if (visited.contains(next)) {
+			String msg = "Link already visited";
+			throw new UnsupportedOperationException(msg);
+		} else {
+			followLink(next);
+		}
+    }
+
+    private static String getFirstLink(Elements paragraphs) {
+		int i = 0;
+		while (i<paragraphs.size()) {
+			Element firstPara = paragraphs.get(i);
+			Iterable<Node> iter = new WikiNodeIterable(firstPara);
+			for (Node node: iter) {
+				if (node instanceof Element) {
+					Elements links = ((Element)node).select("a[href]");
+					for (Element element: links) {
+						if (!italicized(element)) {
+							String href = element.attr("href");
+							// link is not external, but not to the same page
+							if (href.startsWith("/wiki")) {
+								String absHref = element.attr("abs:href");
+								System.out.println(absHref);
+								return absHref;
+							}
+						}
+					}
+				}
+			}
+			i++;
+		}
+		String msg = "No links found";
+		throw new UnsupportedOperationException(msg); 
+    }
+
+    private static boolean italicized(Element element) {
+    	Elements parents = element.parents();
+		boolean italics = false;
+		for (Element parent: parents) {
+			if (parent.tagName() == "i" || parent.tagName() == "em") {
+				italics = true;
+			}
+		}
+		return italics;
+    }
 }
